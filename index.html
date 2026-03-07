@@ -3,80 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buddy Board - ゲーム募集</title>
+    <title>Buddy Board - 友達専用</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        .glass-morphism { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
-        .modal-active { display: flex !important; }
+        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
+        .post-card { transition: all 0.2s; }
+        .post-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
+<body class="min-h-screen p-4">
 
-    <!-- ログイン画面 -->
-    <div id="auth-section" class="w-full max-w-md mt-20 p-8 glass-morphism rounded-2xl shadow-xl">
-        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">🔒 Secret Access</h1>
-        <div class="space-y-4">
-            <input type="password" id="password-input" placeholder="パスワードを入力" 
-                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200">
-                ログイン
-            </button>
-            <p id="auth-error" class="text-red-500 text-sm text-center hidden">パスワードが違います</p>
-            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden font-semibold">接続中...</p>
+    <!-- 1. ログイン画面 -->
+    <div id="auth-section" class="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl shadow-2xl border border-gray-100 text-center">
+        <div class="mb-6">
+            <span class="text-4xl">🎮</span>
+            <h1 class="text-2xl font-black text-gray-800 mt-2">Buddy Board</h1>
+        </div>
+        <p class="text-sm text-gray-500 mb-6">合言葉を入力して入室してください</p>
+        <input type="password" id="password-input" placeholder="パスワード(1234)" 
+               class="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center text-lg mb-4">
+        <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition duration-200">
+            入室する
+        </button>
+        <div id="error-container" class="mt-4 hidden text-sm">
+            <p id="error-msg" class="text-red-500 mb-2"></p>
+            <p class="text-gray-400 text-xs text-left p-3 bg-gray-50 rounded-lg">
+                ※もし解決しない場合は、Firebaseコンソールで「新しい Authentication にアップグレードする」ボタンを押し、完了させてください。
+            </p>
         </div>
     </div>
 
-    <!-- メイン画面 -->
-    <div id="main-content" class="w-full max-w-4xl hidden space-y-6">
-        <header class="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-2xl shadow-sm gap-4">
-            <div>
-                <h1 class="text-3xl font-extrabold text-blue-600">Buddy Board</h1>
-                <p class="text-gray-500 text-sm">友達専用のゲーム募集掲示板</p>
-            </div>
-            <div id="user-info" class="flex items-center gap-3">
-                <span id="display-name" class="font-semibold text-gray-700 text-sm"></span>
-                <button id="reset-name-link" class="text-xs text-blue-500 hover:underline">名前を変更</button>
+    <!-- 2. メイン画面 -->
+    <div id="main-content" class="max-w-4xl mx-auto hidden space-y-6">
+        <header class="flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm">
+            <h1 class="text-2xl font-bold text-blue-600">Buddy Board</h1>
+            <div class="text-right">
+                <span id="display-name" class="font-bold text-gray-700 block text-sm"></span>
+                <button id="reset-name" class="text-[10px] text-gray-400 hover:text-blue-500 underline">ログアウト・名前変更</button>
             </div>
         </header>
 
-        <!-- 名前設定モーダル -->
-        <div id="name-modal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden">
-            <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
-                <h2 class="text-xl font-bold mb-4 text-gray-800">名前を入力してください</h2>
-                <input type="text" id="username-input" placeholder="あなたの名前" class="w-full px-4 py-3 rounded-lg border border-gray-300 mb-4 outline-none">
-                <button id="save-name-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">決定</button>
+        <!-- 投稿エリア -->
+        <section class="bg-white p-6 rounded-2xl shadow-sm">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <input type="text" id="game-name" placeholder="何のゲーム？" class="px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
+                <input type="text" id="game-time" placeholder="いつ？ (21時〜等)" class="px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
+                <button id="post-btn" class="bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-md">募集を投稿</button>
             </div>
+        </section>
+
+        <!-- リスト表示 -->
+        <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="col-span-full text-center py-10 text-gray-400">読み込み中...</div>
         </div>
+    </div>
 
-        <!-- 投稿フォーム -->
-        <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 class="text-lg font-bold mb-4">新しく募集する</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" id="game-name" placeholder="ゲーム名" class="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none">
-                <input type="text" id="game-time" placeholder="時間" class="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none">
-                <select id="is-active" class="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none">
-                    <option value="●">● (募集中)</option>
-                    <option value="×">× (終了)</option>
-                </select>
-            </div>
-            <button id="post-btn" class="mt-4 px-10 py-3 bg-blue-600 text-white font-bold rounded-lg transition hover:bg-blue-700">投稿する</button>
-        </section>
-
-        <!-- 募集一覧 -->
-        <section>
-            <h2 class="text-xl font-bold mb-4">募集一覧</h2>
-            <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="col-span-full text-center text-gray-400 py-10">募集を読み込んでいます...</div>
-            </div>
-        </section>
+    <!-- 名前入力モーダル -->
+    <div id="name-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center">
+            <h2 class="text-xl font-bold mb-4">表示名を入力</h2>
+            <input type="text" id="username-input" placeholder="ニックネーム" class="w-full px-4 py-3 border rounded-xl mb-4 text-center">
+            <button id="save-name-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">決定</button>
+        </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyConva0-yx5nNix7GfwmJBaGm3xKUtSDdk",
@@ -87,158 +82,162 @@
             appId: "1:436007220199:web:9c0a35272af2e96d028342"
         };
 
-        const APP_PASSWORD = "1234";
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        let currentUserName = localStorage.getItem('game_username') || "";
-        let currentUser = null;
-
         const els = {
-            authSection: document.getElementById('auth-section'),
-            mainContent: document.getElementById('main-content'),
-            nameModal: document.getElementById('name-modal'),
-            passwordInput: document.getElementById('password-input'),
-            loginBtn: document.getElementById('login-btn'),
-            authError: document.getElementById('auth-error'),
-            loadingMsg: document.getElementById('loading-msg'),
-            usernameInput: document.getElementById('username-input'),
-            saveNameBtn: document.getElementById('save-name-btn'),
-            displayName: document.getElementById('display-name'),
-            resetNameLink: document.getElementById('reset-name-link'),
-            gameName: document.getElementById('game-name'),
-            gameTime: document.getElementById('game-time'),
-            isActive: document.getElementById('is-active'),
-            postBtn: document.getElementById('post-btn'),
-            postsContainer: document.getElementById('posts-container')
+            authSec: document.getElementById('auth-section'),
+            mainSec: document.getElementById('main-content'),
+            nameMod: document.getElementById('name-modal'),
+            errCont: document.getElementById('error-container'),
+            errText: document.getElementById('error-msg'),
+            passIn: document.getElementById('password-input'),
+            loginBtn: document.getElementById('login-btn')
         };
 
-        // ログイン処理（永続性を設定してから実行するように変更）
-        async function authenticate() {
+        els.loginBtn.addEventListener('click', async () => {
+            const pass = els.passIn.value;
+            if (pass !== "1234") {
+                showError("パスワードが違います");
+                return;
+            }
+            
+            els.errText.textContent = "接続中...";
+            els.errCont.classList.remove('hidden');
             els.loginBtn.disabled = true;
-            els.loadingMsg.classList.remove('hidden');
-            els.authError.classList.add('hidden');
             
             try {
-                // セッションをブラウザに保存する設定
+                // 永続性を明示的にセットしてからログイン
                 await setPersistence(auth, browserLocalPersistence);
-                // 匿名サインインを実行
                 await signInAnonymously(auth);
-            } catch (error) {
-                console.error("Firebase Auth Error:", error.code, error.message);
-                els.loadingMsg.textContent = "エラー: " + error.code;
+            } catch (e) {
+                console.error("Login Error:", e);
                 els.loginBtn.disabled = false;
-                
-                if (error.code === 'auth/configuration-not-found') {
-                    els.loadingMsg.innerHTML = "エラー: Firebase設定が未完了です。<br><span class='text-xs font-normal'>Authentication > 設定 > Identity Platform にアップグレード を確認してください。</span>";
+                if (e.code === 'auth/configuration-not-found') {
+                    showError("Firebase側のアップグレード設定が反映されていません。コンソールで『アップグレードを完了する』ボタンを押してください。");
+                } else {
+                    showError("エラー: " + e.code);
                 }
             }
-        }
-
-        els.loginBtn.addEventListener('click', () => {
-            if (els.passwordInput.value === APP_PASSWORD) {
-                authenticate();
-            } else {
-                els.authError.classList.remove('hidden');
-            }
         });
+
+        function showError(msg) {
+            els.errText.textContent = msg;
+            els.errCont.classList.remove('hidden');
+        }
 
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                currentUser = user;
-                els.authSection.classList.add('hidden');
-                els.mainContent.classList.remove('hidden');
-                if (!currentUserName) {
-                    els.nameModal.classList.add('modal-active');
+                els.authSec.classList.add('hidden');
+                els.mainSec.classList.remove('hidden');
+                const name = localStorage.getItem('chat_name');
+                if (!name) {
+                    els.nameMod.classList.remove('hidden');
                 } else {
-                    startListening();
+                    initApp(name, user.uid);
                 }
+            } else {
+                els.authSec.classList.remove('hidden');
+                els.mainSec.classList.add('hidden');
             }
         });
 
-        els.saveNameBtn.addEventListener('click', () => {
-            const name = els.usernameInput.value.trim();
-            if (!name) return;
-            currentUserName = name;
-            localStorage.setItem('game_username', name);
-            els.nameModal.classList.remove('modal-active');
-            startListening();
+        document.getElementById('save-name-btn').addEventListener('click', () => {
+            const name = document.getElementById('username-input').value.trim();
+            if (name) {
+                localStorage.setItem('chat_name', name);
+                els.nameMod.classList.add('hidden');
+                initApp(name, auth.currentUser.uid);
+            }
         });
 
-        els.resetNameLink.addEventListener('click', () => {
-            localStorage.removeItem('game_username');
-            location.reload();
+        document.getElementById('reset-name').addEventListener('click', async () => {
+            if(confirm("ログアウトして名前を再設定しますか？")) {
+                localStorage.removeItem('chat_name');
+                await signOut(auth);
+                location.reload();
+            }
         });
 
-        function startListening() {
-            // エラー回避のため、まずは最も単純なクエリから開始
-            onSnapshot(collection(db, 'posts'), (snapshot) => {
-                const posts = [];
-                snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
-                // JS側でソート（Firestoreのインデックスエラーを回避）
-                posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                renderPosts(posts);
+        function initApp(userName, userId) {
+            document.getElementById('display-name').textContent = `ようこそ ${userName} さん`;
+            
+            // 投稿リスト取得
+            const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+            
+            onSnapshot(q, (snapshot) => {
+                renderPosts(snapshot, userId);
             }, (err) => {
-                console.error("Firestore Listen Error:", err);
-                els.postsContainer.innerHTML = '<div class="col-span-full text-center text-red-400 py-10 font-bold">データの読み込みに失敗しました。<br>ルールの設定を確認してください。</div>';
+                console.warn("Sorting failed, falling back:", err);
+                onSnapshot(collection(db, 'posts'), (s) => renderPosts(s, userId));
             });
         }
 
-        els.postBtn.addEventListener('click', async () => {
-            const game = els.gameName.value.trim();
-            const time = els.gameTime.value.trim();
-            if (!game || !time || !currentUser) return;
+        function renderPosts(snapshot, userId) {
+            const container = document.getElementById('posts-container');
+            container.innerHTML = "";
+            if (snapshot.empty) {
+                container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400">募集はまだありません</div>';
+                return;
+            }
             
-            els.postBtn.disabled = true;
+            // インデックス未作成時のためにメモリ上でソート
+            const docs = [];
+            snapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
+            docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+
+            docs.forEach(post => {
+                const card = document.createElement('div');
+                card.className = "bg-white p-5 rounded-2xl shadow-sm border border-gray-100 post-card";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start mb-2">
+                        <h3 class="font-black text-xl text-gray-800">${escape(post.game)}</h3>
+                        ${post.userId === userId ? `<button onclick="window.del('${post.id}')" class="text-gray-300 hover:text-red-500 text-xs transition">削除</button>` : ''}
+                    </div>
+                    <p class="text-gray-600 font-medium">⏰ ${escape(post.time)}</p>
+                    <div class="flex justify-between items-end mt-4">
+                        <p class="text-[10px] text-gray-400">投稿者: ${escape(post.userName)}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        document.getElementById('post-btn').addEventListener('click', async () => {
+            const gameEl = document.getElementById('game-name');
+            const timeEl = document.getElementById('game-time');
+            const game = gameEl.value.trim();
+            const time = timeEl.value.trim();
+            
+            if (!game || !time || !auth.currentUser) return;
+
             try {
                 await addDoc(collection(db, 'posts'), {
-                    game, time, status: els.isActive.value,
-                    userName: currentUserName, userId: currentUser.uid, createdAt: serverTimestamp()
+                    game, time, 
+                    userName: localStorage.getItem('chat_name'),
+                    userId: auth.currentUser.uid, 
+                    createdAt: serverTimestamp()
                 });
-                els.gameName.value = ""; els.gameTime.value = "";
-            } catch (e) {
-                console.error("Post Error:", e);
-                alert("投稿に失敗しました。Firestoreの「ルール」を確認してください。");
-            } finally {
-                els.postBtn.disabled = false;
+                gameEl.value = "";
+                timeEl.value = "";
+            } catch (e) { 
+                console.error("Post error:", e);
+                alert("送信に失敗しました。Firestoreのルール設定を確認してください。"); 
             }
         });
 
-        window.deletePost = async (id) => {
-            if (confirm("募集を削除しますか？")) {
+        window.del = async (id) => { 
+            if(confirm("削除しますか？")) {
                 try {
                     await deleteDoc(doc(db, 'posts', id));
-                } catch (e) { console.error("Delete Error:", e); }
+                } catch (e) {
+                    console.error("Delete error:", e);
+                }
             }
         };
 
-        function renderPosts(posts) {
-            els.displayName.textContent = `ようこそ、${currentUserName}さん`;
-            if (posts.length === 0) {
-                els.postsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 py-10">募集中のゲームはまだありません</div>';
-                return;
-            }
-            els.postsContainer.innerHTML = posts.map(post => `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'} transition transform hover:scale-[1.02]">
-                    <div class="flex justify-between items-start">
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${post.status === '●' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
-                            ${post.status === '●' ? '募集中' : '終了'}
-                        </span>
-                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition-colors">削除</button>` : ''}
-                    </div>
-                    <h3 class="text-lg font-bold text-gray-800 mt-2">${escape(post.game)}</h3>
-                    <p class="text-sm text-gray-600 mt-1">時間: ${escape(post.time)}</p>
-                    <p class="text-[10px] text-gray-400 mt-2">投稿者: ${escape(post.userName)}</p>
-                </div>
-            `).join('');
-        }
         function escape(s) { return s ? s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])) : ''; }
-
-        els.passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') els.loginBtn.click();
-        });
     </script>
 </body>
 </html>
-
