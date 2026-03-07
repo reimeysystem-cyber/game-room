@@ -10,14 +10,13 @@
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .glass-morphism { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
         .modal-active { display: flex !important; }
-        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
 
     <!-- パスワード認証セクション -->
     <div id="auth-section" class="w-full max-w-md mt-20 p-8 glass-morphism rounded-2xl shadow-xl">
-        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">🔒 パスワードを入力。</h1>
+        <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">🔒 Secret Access</h1>
         <div class="space-y-4">
             <input type="password" id="password-input" placeholder="パスワードを入力してください" 
                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
@@ -75,27 +74,26 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global Variables from environment
-        let firebaseConfig = {};
-        try {
-            firebaseConfig = JSON.parse(__firebase_config);
-        } catch (e) {
-            console.error("Firebase config parse error", e);
-        }
+        // あなたのFirebase情報を反映しました
+        const firebaseConfig = {
+            apiKey: "AIzaSyConva0-yx5nNix7GfwmJBaGm3xKUtSDdk",
+            authDomain: "game-f87b6.firebaseapp.com",
+            projectId: "game-f87b6",
+            storageBucket: "game-f87b6.firebasestorage.app",
+            messagingSenderId: "436007220199",
+            appId: "1:436007220199:web:9c0a35272af2e96d028342"
+        };
 
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'game-board-v1';
         const APP_PASSWORD = "1234"; 
-
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
         let currentUserName = localStorage.getItem('game_username') || "";
         let currentUser = null;
-        let unsubscribePosts = null;
 
         const els = {
             authSection: document.getElementById('auth-section'),
@@ -116,35 +114,20 @@
             postsContainer: document.getElementById('posts-container')
         };
 
-        async function authenticate(retryCount = 0) {
+        async function authenticate() {
             els.loginBtn.disabled = true;
-            els.loginBtn.classList.add('btn-disabled');
             els.loadingMsg.classList.remove('hidden');
-            els.loadingMsg.textContent = `接続中... (試行 ${retryCount + 1}/5)`;
-
             try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
+                await signInAnonymously(auth);
             } catch (error) {
-                console.error("Auth Error:", error);
-                if (retryCount < 5) {
-                    const delay = Math.pow(2, retryCount) * 1000;
-                    setTimeout(() => authenticate(retryCount + 1), delay);
-                } else {
-                    els.loadingMsg.textContent = "接続エラー。設定を確認するか再読み込みしてください。";
-                    els.loadingMsg.classList.replace('text-blue-500', 'text-red-500');
-                    els.loginBtn.disabled = false;
-                    els.loginBtn.classList.remove('btn-disabled');
-                }
+                console.error(error);
+                els.loadingMsg.textContent = "接続エラー。Firebaseの「匿名認証」が有効か確認してください。";
+                els.loginBtn.disabled = false;
             }
         }
 
         els.loginBtn.addEventListener('click', () => {
             if (els.passwordInput.value === APP_PASSWORD) {
-                els.authError.classList.add('hidden');
                 authenticate();
             } else {
                 els.authError.classList.remove('hidden');
@@ -179,67 +162,32 @@
         });
 
         function startListening() {
-            if (!currentUser) return;
-            if (unsubscribePosts) unsubscribePosts();
-
-            const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
-            
-            unsubscribePosts = onSnapshot(collectionPath, (snapshot) => {
+            const collectionPath = collection(db, 'posts'); 
+            onSnapshot(collectionPath, (snapshot) => {
                 const posts = [];
                 snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
                 posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderPosts(posts);
-            }, (error) => {
-                console.error("Firestore Error:", error);
             });
         }
 
         els.postBtn.addEventListener('click', async () => {
-            if (!currentUser || !currentUserName) return;
             const game = els.gameName.value.trim();
             const time = els.gameTime.value.trim();
-            const status = els.isActive.value;
             if (!game || !time) return;
-
-            els.postBtn.disabled = true;
-            els.postBtn.textContent = "投稿中...";
-
-            try {
-                const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
-                await addDoc(collectionPath, {
-                    game, 
-                    time, 
-                    status, 
-                    userName: currentUserName, 
-                    userId: currentUser.uid, 
-                    createdAt: serverTimestamp()
-                });
-                els.gameName.value = "";
-                els.gameTime.value = "";
-            } catch (e) {
-                console.error("Post Error:", e);
-            } finally {
-                els.postBtn.disabled = false;
-                els.postBtn.textContent = "投稿する";
-            }
+            await addDoc(collection(db, 'posts'), {
+                game, time, status: els.isActive.value,
+                userName: currentUserName, userId: currentUser.uid, createdAt: serverTimestamp()
+            });
+            els.gameName.value = ""; els.gameTime.value = "";
         });
 
         window.deletePost = async (id) => {
-            if (!currentUser || !confirm("削除しますか？")) return;
-            try {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', id);
-                await deleteDoc(docRef);
-            } catch (e) {
-                console.error("Delete Error:", e);
-            }
+            if (confirm("削除しますか？")) await deleteDoc(doc(db, 'posts', id));
         };
 
         function renderPosts(posts) {
             els.displayName.textContent = `ようこそ、${currentUserName}さん`;
-            if (posts.length === 0) {
-                els.postsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 italic py-10">現在募集はありません。</div>';
-                return;
-            }
             els.postsContainer.innerHTML = posts.map(post => `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'} transition hover:shadow-md">
                     <div class="flex justify-between items-start">
@@ -248,19 +196,13 @@
                         </span>
                         ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition">削除</button>` : ''}
                     </div>
-                    <h3 class="text-lg font-bold text-gray-800 mt-2">${escapeHtml(post.game)}</h3>
+                    <h3 class="text-lg font-bold text-gray-800 mt-2">${post.game}</h3>
                     <div class="mt-3 space-y-1 text-sm text-gray-600">
-                        <p class="flex items-center gap-2"><span class="text-gray-400 w-10 text-[10px] uppercase font-bold">Time</span> ${escapeHtml(post.time)}</p>
-                        <p class="flex items-center gap-2"><span class="text-gray-400 w-10 text-[10px] uppercase font-bold">Host</span> ${escapeHtml(post.userName)}</p>
+                        <p class="flex items-center gap-2"><span class="text-gray-400 w-10 text-[10px] uppercase font-bold">Time</span> ${post.time}</p>
+                        <p class="flex items-center gap-2"><span class="text-gray-400 w-10 text-[10px] uppercase font-bold">Host</span> ${post.userName}</p>
                     </div>
                 </div>
-            `).join('');
-        }
-
-        function escapeHtml(str) {
-            const p = document.createElement('p');
-            p.textContent = str;
-            return p.innerHTML;
+            `).join('') || '<div class="col-span-full text-center text-gray-400 italic py-10">募集はありません</div>';
         }
 
         els.passwordInput.addEventListener('keypress', (e) => {
