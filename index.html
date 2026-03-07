@@ -24,7 +24,7 @@
                 ログイン
             </button>
             <p id="auth-error" class="text-red-500 text-sm text-center hidden">パスワードが違います</p>
-            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden">Firebaseに接続を試みています...</p>
+            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden">Firebaseと通信中...</p>
         </div>
     </div>
 
@@ -41,7 +41,7 @@
             </div>
         </header>
 
-        <!-- 名前設定 -->
+        <!-- 名前設定モーダル -->
         <div id="name-modal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden">
             <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
                 <h2 class="text-xl font-bold mb-4 text-gray-800">名前を入力してください</h2>
@@ -50,6 +50,7 @@
             </div>
         </div>
 
+        <!-- 投稿フォーム -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 class="text-lg font-bold mb-4">新しく募集する</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -63,6 +64,7 @@
             <button id="post-btn" class="mt-4 px-10 py-3 bg-blue-600 text-white font-bold rounded-lg transition hover:bg-blue-700">投稿する</button>
         </section>
 
+        <!-- 募集一覧 -->
         <section>
             <h2 class="text-xl font-bold mb-4">募集一覧</h2>
             <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -72,11 +74,12 @@
     </div>
 
     <script type="module">
+        // Firebaseライブラリのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Firebase Configuration (あなたのIDをそのまま使用)
+        // あなたのFirebaseプロジェクト設定
         const firebaseConfig = {
             apiKey: "AIzaSyConva0-yx5nNix7GfwmJBaGm3xKUtSDdk",
             authDomain: "game-f87b6.firebaseapp.com",
@@ -86,7 +89,7 @@
             appId: "1:436007220199:web:9c0a35272af2e96d028342"
         };
 
-        const APP_PASSWORD = "1234"; 
+        const APP_PASSWORD = "1234"; // 簡易ログインパスワード
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -113,15 +116,21 @@
             postsContainer: document.getElementById('posts-container')
         };
 
+        // ログイン処理
         async function authenticate() {
             els.loginBtn.disabled = true;
             els.loadingMsg.classList.remove('hidden');
             try {
+                // 匿名サインインを実行
                 await signInAnonymously(auth);
             } catch (error) {
-                console.error("Auth Error:", error);
-                els.loadingMsg.textContent = "接続エラー: Authentication設定を確認してください";
+                console.error("Auth Error Details:", error);
+                els.loadingMsg.textContent = "エラー: " + error.code;
                 els.loginBtn.disabled = false;
+                // 万が一失敗した場合は1回だけページをリロードして初期化を促す
+                if(error.code === 'auth/configuration-not-found') {
+                    console.log("Retrying initialization...");
+                }
             }
         }
 
@@ -133,6 +142,7 @@
             }
         });
 
+        // 認証状態の監視
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -160,16 +170,16 @@
             location.reload();
         });
 
+        // Firestoreのリアルタイム更新
         function startListening() {
-            // 最もシンプルなパス 'posts' を使用
             const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
             onSnapshot(q, (snapshot) => {
                 const posts = [];
                 snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
                 renderPosts(posts);
             }, (err) => {
-                console.error("Firestore Listen Error:", err);
-                // エラーが出た場合は並び替えなしで試行
+                console.error("Firestore Error:", err);
+                // インデックス未作成の場合は並び替えなしで取得
                 onSnapshot(collection(db, 'posts'), (s) => {
                     const ps = [];
                     s.forEach(d => ps.push({ id: d.id, ...d.data() }));
@@ -178,6 +188,7 @@
             });
         }
 
+        // 投稿処理
         els.postBtn.addEventListener('click', async () => {
             const game = els.gameName.value.trim();
             const time = els.gameTime.value.trim();
@@ -192,12 +203,13 @@
                 els.gameName.value = ""; els.gameTime.value = "";
             } catch (e) {
                 console.error("Post Error:", e);
-                alert("投稿に失敗しました。ルールの設定を確認してください。");
+                alert("投稿失敗: Firestoreのルールを確認してください。");
             } finally {
                 els.postBtn.disabled = false;
             }
         });
 
+        // 削除処理
         window.deletePost = async (id) => {
             if (confirm("削除しますか？")) {
                 try {
@@ -206,6 +218,7 @@
             }
         };
 
+        // 画面への描画
         function renderPosts(posts) {
             els.displayName.textContent = `ようこそ、${currentUserName}さん`;
             if (posts.length === 0) {
@@ -218,7 +231,7 @@
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded ${post.status === '●' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
                             ${post.status === '●' ? '募集中' : '終了'}
                         </span>
-                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500">削除</button>` : ''}
+                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition">削除</button>` : ''}
                     </div>
                     <h3 class="text-lg font-bold text-gray-800 mt-2">${escape(post.game)}</h3>
                     <p class="text-sm text-gray-600 mt-1">時間: ${escape(post.time)} / 投稿者: ${escape(post.userName)}</p>
@@ -226,6 +239,10 @@
             `).join('');
         }
         function escape(s) { return s ? s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])) : ''; }
+
+        els.passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') els.loginBtn.click();
+        });
     </script>
 </body>
 </html>
