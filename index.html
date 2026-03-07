@@ -7,64 +7,97 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; }
-        .post-card { transition: all 0.2s; }
-        .post-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .glass { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
+        .post-card { transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #e2e8f0; }
+        .post-card:hover { transform: translateY(-3px); box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1); }
     </style>
 </head>
-<body class="min-h-screen p-4">
+<body class="min-h-screen text-gray-900">
 
     <!-- 1. ログイン画面 -->
-    <div id="auth-section" class="max-w-md mx-auto mt-20 p-8 bg-white rounded-3xl shadow-2xl border border-gray-100 text-center">
-        <div class="mb-6">
-            <span class="text-4xl">🎮</span>
-            <h1 class="text-2xl font-black text-gray-800 mt-2">Buddy Board</h1>
-        </div>
-        <p class="text-sm text-gray-500 mb-6">合言葉を入力して入室してください</p>
-        <input type="password" id="password-input" placeholder="パスワード(1234)" 
-               class="w-full px-5 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-blue-500 outline-none text-center text-lg mb-4">
-        <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg transition duration-200">
-            入室する
-        </button>
-        <div id="error-container" class="mt-4 hidden text-sm">
-            <p id="error-msg" class="text-red-500 mb-2"></p>
-            <p class="text-gray-400 text-xs text-left p-3 bg-gray-50 rounded-lg">
-                ※もし解決しない場合は、Firebaseコンソールで「新しい Authentication にアップグレードする」ボタンを押し、完了させてください。
-            </p>
+    <div id="auth-section" class="fixed inset-0 flex items-center justify-center p-4 z-50 bg-gray-50">
+        <div class="w-full max-w-md p-8 glass rounded-3xl shadow-2xl border border-white text-center">
+            <div class="mb-8">
+                <div class="inline-block p-4 bg-blue-50 rounded-2xl mb-4">
+                    <span class="text-4xl">🎮</span>
+                </div>
+                <h1 class="text-3xl font-black tracking-tight text-gray-800">Buddy Board</h1>
+                <p class="text-gray-500 mt-2">合言葉を入力して入室</p>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="password" id="password-input" placeholder="パスワード(1234)" 
+                       class="w-full px-6 py-4 bg-gray-100 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none text-center text-xl transition-all">
+                
+                <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-95">
+                    ログイン
+                </button>
+            </div>
+
+            <div id="error-container" class="mt-6 hidden">
+                <p id="error-msg" class="text-red-500 font-bold text-sm mb-2"></p>
+                <div class="text-left text-[11px] text-gray-400 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                    <p class="font-bold mb-1">【解決しない場合】</p>
+                    1. Identity Toolkit APIを「有効」にしましたか？<br>
+                    2. 反映に数分かかる場合があります。<br>
+                    3. ページを再読み込みしてください。
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- 2. メイン画面 -->
-    <div id="main-content" class="max-w-4xl mx-auto hidden space-y-6">
-        <header class="flex justify-between items-center bg-white p-5 rounded-2xl shadow-sm">
-            <h1 class="text-2xl font-bold text-blue-600">Buddy Board</h1>
-            <div class="text-right">
-                <span id="display-name" class="font-bold text-gray-700 block text-sm"></span>
-                <button id="reset-name" class="text-[10px] text-gray-400 hover:text-blue-500 underline">ログアウト・名前変更</button>
+    <div id="main-content" class="hidden max-w-4xl mx-auto p-4 md:p-8 space-y-8">
+        <header class="flex justify-between items-center py-4">
+            <h1 class="text-2xl font-black text-blue-600 tracking-tighter">BUDDY BOARD</h1>
+            <div class="bg-white px-4 py-2 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
+                <span id="display-name" class="font-bold text-gray-700 text-sm"></span>
+                <button id="reset-name" class="p-1 hover:bg-gray-100 rounded-lg transition-colors" title="ログアウト">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </button>
             </div>
         </header>
 
-        <!-- 投稿エリア -->
-        <section class="bg-white p-6 rounded-2xl shadow-sm">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <input type="text" id="game-name" placeholder="何のゲーム？" class="px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
-                <input type="text" id="game-time" placeholder="いつ？ (21時〜等)" class="px-4 py-3 bg-gray-50 rounded-xl outline-none focus:ring-2 focus:ring-blue-400">
-                <button id="post-btn" class="bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-md">募集を投稿</button>
+        <!-- 投稿フォーム -->
+        <section class="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+            <h2 class="text-sm font-bold text-gray-400 mb-4 uppercase tracking-widest">新しい募集</h2>
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3">
+                <div class="md:col-span-5">
+                    <input type="text" id="game-name" placeholder="何のゲーム？" class="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all">
+                </div>
+                <div class="md:col-span-4">
+                    <input type="text" id="game-time" placeholder="いつ？ (例: 21:00〜)" class="w-full px-5 py-3 bg-gray-50 border border-gray-100 rounded-2xl outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white transition-all">
+                </div>
+                <div class="md:col-span-3">
+                    <button id="post-btn" class="w-full bg-gray-900 hover:bg-black text-white font-bold py-3 rounded-2xl shadow-lg transition-all active:scale-95">
+                        募集する
+                    </button>
+                </div>
             </div>
         </section>
 
-        <!-- リスト表示 -->
+        <!-- リスト -->
         <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div class="col-span-full text-center py-10 text-gray-400">読み込み中...</div>
+            <!-- 投稿がここに動的に追加される -->
+            <div class="col-span-full flex flex-col items-center py-20 text-gray-300">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
+                <p>読み込み中...</p>
+            </div>
         </div>
     </div>
 
-    <!-- 名前入力モーダル -->
-    <div id="name-modal" class="fixed inset-0 bg-black/60 flex items-center justify-center z-50 hidden">
-        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center">
-            <h2 class="text-xl font-bold mb-4">表示名を入力</h2>
-            <input type="text" id="username-input" placeholder="ニックネーム" class="w-full px-4 py-3 border rounded-xl mb-4 text-center">
-            <button id="save-name-btn" class="w-full bg-blue-600 text-white py-3 rounded-xl font-bold">決定</button>
+    <!-- 名前設定モーダル -->
+    <div id="name-modal" class="fixed inset-0 bg-gray-900/40 backdrop-blur-sm flex items-center justify-center z-[60] hidden p-4">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-xs text-center border border-gray-100">
+            <h2 class="text-xl font-bold mb-2">表示名</h2>
+            <p class="text-gray-400 text-sm mb-6">掲示板に表示される名前です</p>
+            <input type="text" id="username-input" placeholder="ニックネーム" maxlength="10" class="w-full px-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl mb-6 text-center text-lg outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white">
+            <button id="save-name-btn" class="w-full bg-blue-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-blue-100 active:scale-95 transition-all">
+                保存して開始
+            </button>
         </div>
     </div>
 
@@ -97,25 +130,24 @@
         };
 
         els.loginBtn.addEventListener('click', async () => {
-            const pass = els.passIn.value;
-            if (pass !== "1234") {
+            if (els.passIn.value !== "1234") {
                 showError("パスワードが違います");
                 return;
             }
             
-            els.errText.textContent = "接続中...";
+            els.errText.textContent = "Firebaseに接続中...";
             els.errCont.classList.remove('hidden');
             els.loginBtn.disabled = true;
             
             try {
-                // 永続性を明示的にセットしてからログイン
+                // 接続を安定させるための永続性設定
                 await setPersistence(auth, browserLocalPersistence);
                 await signInAnonymously(auth);
             } catch (e) {
-                console.error("Login Error:", e);
+                console.error("Firebase Error:", e);
                 els.loginBtn.disabled = false;
                 if (e.code === 'auth/configuration-not-found') {
-                    showError("Firebase側のアップグレード設定が反映されていません。コンソールで『アップグレードを完了する』ボタンを押してください。");
+                    showError("設定エラー (Identity Toolkit APIが無効です)");
                 } else {
                     showError("エラー: " + e.code);
                 }
@@ -131,7 +163,7 @@
             if (user) {
                 els.authSec.classList.add('hidden');
                 els.mainSec.classList.remove('hidden');
-                const name = localStorage.getItem('chat_name');
+                const name = localStorage.getItem('buddy_chat_name');
                 if (!name) {
                     els.nameMod.classList.remove('hidden');
                 } else {
@@ -146,58 +178,71 @@
         document.getElementById('save-name-btn').addEventListener('click', () => {
             const name = document.getElementById('username-input').value.trim();
             if (name) {
-                localStorage.setItem('chat_name', name);
+                localStorage.setItem('buddy_chat_name', name);
                 els.nameMod.classList.add('hidden');
                 initApp(name, auth.currentUser.uid);
             }
         });
 
         document.getElementById('reset-name').addEventListener('click', async () => {
-            if(confirm("ログアウトして名前を再設定しますか？")) {
-                localStorage.removeItem('chat_name');
+            if(confirm("ログアウトしますか？")) {
+                localStorage.removeItem('buddy_chat_name');
                 await signOut(auth);
                 location.reload();
             }
         });
 
         function initApp(userName, userId) {
-            document.getElementById('display-name').textContent = `ようこそ ${userName} さん`;
+            document.getElementById('display-name').textContent = userName;
             
-            // 投稿リスト取得
+            // 投稿リストのリアルタイム取得
             const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
             
             onSnapshot(q, (snapshot) => {
-                renderPosts(snapshot, userId);
+                render(snapshot, userId);
             }, (err) => {
-                console.warn("Sorting failed, falling back:", err);
-                onSnapshot(collection(db, 'posts'), (s) => renderPosts(s, userId));
+                // インデックスがない場合などのフォールバック
+                onSnapshot(collection(db, 'posts'), (s) => render(s, userId));
             });
         }
 
-        function renderPosts(snapshot, userId) {
+        function render(snapshot, userId) {
             const container = document.getElementById('posts-container');
             container.innerHTML = "";
+            
             if (snapshot.empty) {
-                container.innerHTML = '<div class="col-span-full text-center py-10 text-gray-400">募集はまだありません</div>';
+                container.innerHTML = `
+                    <div class="col-span-full py-20 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+                        <p class="text-gray-400">現在募集はありません。最初の投稿をどうぞ！</p>
+                    </div>`;
                 return;
             }
-            
-            // インデックス未作成時のためにメモリ上でソート
+
             const docs = [];
             snapshot.forEach(d => docs.push({id: d.id, ...d.data()}));
+            // メモリ上でソート
             docs.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
 
             docs.forEach(post => {
                 const card = document.createElement('div');
-                card.className = "bg-white p-5 rounded-2xl shadow-sm border border-gray-100 post-card";
+                card.className = "bg-white p-6 rounded-3xl post-card relative overflow-hidden";
                 card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <h3 class="font-black text-xl text-gray-800">${escape(post.game)}</h3>
-                        ${post.userId === userId ? `<button onclick="window.del('${post.id}')" class="text-gray-300 hover:text-red-500 text-xs transition">削除</button>` : ''}
-                    </div>
-                    <p class="text-gray-600 font-medium">⏰ ${escape(post.time)}</p>
-                    <div class="flex justify-between items-end mt-4">
-                        <p class="text-[10px] text-gray-400">投稿者: ${escape(post.userName)}</p>
+                    <div class="relative z-10">
+                        <div class="flex justify-between items-start mb-4">
+                            <span class="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase rounded-full tracking-wider">GAME MATCH</span>
+                            ${post.userId === userId ? `<button onclick="window.del('${post.id}')" class="text-gray-300 hover:text-red-500 transition-colors p-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            </button>` : ''}
+                        </div>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-2 leading-tight">${escape(post.game)}</h3>
+                        <div class="flex items-center text-gray-500 font-semibold mb-6">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            ${escape(post.time)}
+                        </div>
+                        <div class="flex items-center gap-2 pt-4 border-t border-gray-50">
+                            <div class="w-6 h-6 bg-gradient-to-tr from-blue-400 to-indigo-400 rounded-full"></div>
+                            <span class="text-xs font-bold text-gray-400">${escape(post.userName)}</span>
+                        </div>
                     </div>
                 `;
                 container.appendChild(card);
@@ -215,25 +260,20 @@
             try {
                 await addDoc(collection(db, 'posts'), {
                     game, time, 
-                    userName: localStorage.getItem('chat_name'),
+                    userName: localStorage.getItem('buddy_chat_name'),
                     userId: auth.currentUser.uid, 
                     createdAt: serverTimestamp()
                 });
-                gameEl.value = "";
-                timeEl.value = "";
+                gameEl.value = ""; timeEl.value = "";
             } catch (e) { 
                 console.error("Post error:", e);
-                alert("送信に失敗しました。Firestoreのルール設定を確認してください。"); 
+                alert("送信に失敗しました。時間をおいて試してください。"); 
             }
         });
 
         window.del = async (id) => { 
-            if(confirm("削除しますか？")) {
-                try {
-                    await deleteDoc(doc(db, 'posts', id));
-                } catch (e) {
-                    console.error("Delete error:", e);
-                }
+            if(confirm("この募集を削除しますか？")) {
+                try { await deleteDoc(doc(db, 'posts', id)); } catch (e) { console.error(e); }
             }
         };
 
