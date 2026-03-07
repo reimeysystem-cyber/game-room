@@ -24,6 +24,7 @@
                 ログイン
             </button>
             <p id="auth-error" class="text-red-500 text-sm text-center hidden">パスワードが正しくありません。</p>
+            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden">接続中...</p>
         </div>
     </div>
 
@@ -64,26 +65,19 @@
         <section>
             <h2 class="text-xl font-bold mb-4">募集一覧</h2>
             <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="text-center text-gray-400">読み込み中...</div>
+                <div class="text-center text-gray-400 italic">読み込み中...</div>
             </div>
         </section>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 【重要】ここの設定を自分のFirebaseコンソールの値に書き換えてください
-        const firebaseConfig = {
-            apiKey: "あなたのAPIキー",
-            authDomain: "あなたのプロジェクト.firebaseapp.com",
-            projectId: "あなたのプロジェクトID",
-            storageBucket: "あなたのプロジェクト.appspot.com",
-            messagingSenderId: "あなたのID",
-            appId: "あなたのAPP ID"
-        };
-
+        // Global Variables from environment
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'game-board-v1';
         const APP_PASSWORD = "1234"; 
 
         const app = initializeApp(firebaseConfig);
@@ -93,12 +87,31 @@
         let currentUserName = localStorage.getItem('game_username') || "";
         let currentUser = null;
 
+        // Exponential backoff for authentication (Error Handling)
+        async function authenticate(retryCount = 0) {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                if (retryCount < 5) {
+                    const delay = Math.pow(2, retryCount) * 1000;
+                    setTimeout(() => authenticate(retryCount + 1), delay);
+                } else {
+                    document.getElementById('loading-msg').textContent = "接続エラー。ページを再読み込みしてください。";
+                    document.getElementById('loading-msg').classList.replace('text-blue-500', 'text-red-500');
+                }
+            }
+        }
+
         window.checkPassword = () => {
             const input = document.getElementById('password-input').value;
             if (input === APP_PASSWORD) {
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
-                signInAnonymously(auth);
+                document.getElementById('auth-error').classList.add('hidden');
+                document.getElementById('loading-msg').classList.remove('hidden');
+                authenticate();
             } else {
                 document.getElementById('auth-error').classList.remove('hidden');
             }
@@ -107,6 +120,8 @@
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             if (user) {
+                document.getElementById('auth-section').classList.add('hidden');
+                document.getElementById('main-content').classList.remove('hidden');
                 if (!currentUserName) {
                     document.getElementById('name-modal').classList.remove('hidden');
                 } else {
@@ -124,48 +139,96 @@
             startListening();
         };
 
+        window.resetUserName = () => {
+            localStorage.removeItem('game_username');
+            location.reload();
+        };
+
         function startListening() {
-            const q = collection(db, "posts");
-            onSnapshot(q, (snapshot) => {
+            if (!currentUser) return;
+            // RULE 1: Strict Paths
+            const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
+            
+            onSnapshot(collectionPath, (snapshot) => {
                 const posts = [];
                 snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+                // RULE 2: Client-side sorting
                 posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderPosts(posts);
+            }, (error) => {
+                console.error("Firestore Listen Error:", error);
             });
         }
 
         window.addPost = async () => {
+            if (!currentUser || !currentUserName) return;
             const game = document.getElementById('game-name').value;
             const time = document.getElementById('game-time').value;
             const status = document.getElementById('is-active').value;
             if (!game || !time) return;
 
-            await addDoc(collection(db, "posts"), {
-                game, time, status, userName: currentUserName, userId: currentUser.uid, createdAt: serverTimestamp()
-            });
-            document.getElementById('game-name').value = "";
-            document.getElementById('game-time').value = "";
+            try {
+                const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
+                await addDoc(collectionPath, {
+                    game, 
+                    time, 
+                    status, 
+                    userName: currentUserName, 
+                    userId: currentUser.uid, 
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('game-name').value = "";
+                document.getElementById('game-time').value = "";
+            } catch (e) {
+                console.error("Add Doc Error:", e);
+            }
         };
 
         window.deletePost = async (id) => {
-            if (confirm("削除しますか？")) await deleteDoc(doc(db, "posts", id));
+            if (!currentUser || !confirm("削除しますか？")) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', id);
+                await deleteDoc(docRef);
+            } catch (e) {
+                console.error("Delete Doc Error:", e);
+            }
         };
 
         function renderPosts(posts) {
             document.getElementById('display-name').textContent = `ようこそ、${currentUserName}さん`;
             const container = document.getElementById('posts-container');
+            
+            if (posts.length === 0) {
+                container.innerHTML = '<div class="col-span-full text-center text-gray-400 italic py-10">現在募集はありません。</div>';
+                return;
+            }
+
             container.innerHTML = posts.map(post => `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'}">
-                    <div class="flex justify-between">
-                        <span class="text-xs font-bold text-gray-500">${post.status === '●' ? '募集中' : '終了'}</span>
-                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500">削除</button>` : ''}
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs font-bold ${post.status === '●' ? 'text-green-600' : 'text-gray-400'}">
+                            ${post.status === '●' ? '募集中' : '終了'}
+                        </span>
+                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition">削除</button>` : ''}
                     </div>
-                    <h3 class="text-lg font-bold">${post.game}</h3>
-                    <p class="text-sm text-gray-600">時間: ${post.time}</p>
-                    <p class="text-sm text-gray-600">投稿者: ${post.userName}</p>
+                    <h3 class="text-lg font-bold text-gray-800 mt-1">${escapeHtml(post.game)}</h3>
+                    <div class="mt-2 space-y-1 text-sm text-gray-600">
+                        <p><span class="font-semibold">時間:</span> ${escapeHtml(post.time)}</p>
+                        <p><span class="font-semibold">投稿者:</span> ${escapeHtml(post.userName)}</p>
+                    </div>
                 </div>
-            `).join('') || '<div class="col-span-full text-center text-gray-400 italic">現在募集はありません。</div>';
+            `).join('');
         }
+
+        function escapeHtml(str) {
+            const p = document.createElement('p');
+            p.textContent = str;
+            return p.innerHTML;
+        }
+
+        document.getElementById('password-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') checkPassword();
+        });
     </script>
 </body>
 </html>
