@@ -24,7 +24,7 @@
                 ログイン
             </button>
             <p id="auth-error" class="text-red-500 text-sm text-center hidden">パスワードが違います</p>
-            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden">Firebaseと通信中...</p>
+            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden font-semibold">接続中...</p>
         </div>
     </div>
 
@@ -68,18 +68,16 @@
         <section>
             <h2 class="text-xl font-bold mb-4">募集一覧</h2>
             <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="col-span-full text-center text-gray-400 py-10">読み込み中...</div>
+                <div class="col-span-full text-center text-gray-400 py-10">募集を読み込んでいます...</div>
             </div>
         </section>
     </div>
 
     <script type="module">
-        // Firebaseライブラリのインポート
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // あなたのFirebaseプロジェクト設定
         const firebaseConfig = {
             apiKey: "AIzaSyConva0-yx5nNix7GfwmJBaGm3xKUtSDdk",
             authDomain: "game-f87b6.firebaseapp.com",
@@ -89,7 +87,7 @@
             appId: "1:436007220199:web:9c0a35272af2e96d028342"
         };
 
-        const APP_PASSWORD = "1234"; // 簡易ログインパスワード
+        const APP_PASSWORD = "1234";
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -116,20 +114,24 @@
             postsContainer: document.getElementById('posts-container')
         };
 
-        // ログイン処理
+        // ログイン処理（永続性を設定してから実行するように変更）
         async function authenticate() {
             els.loginBtn.disabled = true;
             els.loadingMsg.classList.remove('hidden');
+            els.authError.classList.add('hidden');
+            
             try {
+                // セッションをブラウザに保存する設定
+                await setPersistence(auth, browserLocalPersistence);
                 // 匿名サインインを実行
                 await signInAnonymously(auth);
             } catch (error) {
-                console.error("Auth Error Details:", error);
+                console.error("Firebase Auth Error:", error.code, error.message);
                 els.loadingMsg.textContent = "エラー: " + error.code;
                 els.loginBtn.disabled = false;
-                // 万が一失敗した場合は1回だけページをリロードして初期化を促す
-                if(error.code === 'auth/configuration-not-found') {
-                    console.log("Retrying initialization...");
+                
+                if (error.code === 'auth/configuration-not-found') {
+                    els.loadingMsg.innerHTML = "エラー: Firebase設定が未完了です。<br><span class='text-xs font-normal'>Authentication > 設定 > Identity Platform にアップグレード を確認してください。</span>";
                 }
             }
         }
@@ -142,7 +144,6 @@
             }
         });
 
-        // 認証状態の監視
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
@@ -170,25 +171,20 @@
             location.reload();
         });
 
-        // Firestoreのリアルタイム更新
         function startListening() {
-            const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-            onSnapshot(q, (snapshot) => {
+            // エラー回避のため、まずは最も単純なクエリから開始
+            onSnapshot(collection(db, 'posts'), (snapshot) => {
                 const posts = [];
                 snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
+                // JS側でソート（Firestoreのインデックスエラーを回避）
+                posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderPosts(posts);
             }, (err) => {
-                console.error("Firestore Error:", err);
-                // インデックス未作成の場合は並び替えなしで取得
-                onSnapshot(collection(db, 'posts'), (s) => {
-                    const ps = [];
-                    s.forEach(d => ps.push({ id: d.id, ...d.data() }));
-                    renderPosts(ps);
-                });
+                console.error("Firestore Listen Error:", err);
+                els.postsContainer.innerHTML = '<div class="col-span-full text-center text-red-400 py-10 font-bold">データの読み込みに失敗しました。<br>ルールの設定を確認してください。</div>';
             });
         }
 
-        // 投稿処理
         els.postBtn.addEventListener('click', async () => {
             const game = els.gameName.value.trim();
             const time = els.gameTime.value.trim();
@@ -203,38 +199,37 @@
                 els.gameName.value = ""; els.gameTime.value = "";
             } catch (e) {
                 console.error("Post Error:", e);
-                alert("投稿失敗: Firestoreのルールを確認してください。");
+                alert("投稿に失敗しました。Firestoreの「ルール」を確認してください。");
             } finally {
                 els.postBtn.disabled = false;
             }
         });
 
-        // 削除処理
         window.deletePost = async (id) => {
-            if (confirm("削除しますか？")) {
+            if (confirm("募集を削除しますか？")) {
                 try {
                     await deleteDoc(doc(db, 'posts', id));
                 } catch (e) { console.error("Delete Error:", e); }
             }
         };
 
-        // 画面への描画
         function renderPosts(posts) {
             els.displayName.textContent = `ようこそ、${currentUserName}さん`;
             if (posts.length === 0) {
-                els.postsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 py-10">募集はありません</div>';
+                els.postsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 py-10">募集中のゲームはまだありません</div>';
                 return;
             }
             els.postsContainer.innerHTML = posts.map(post => `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'}">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'} transition transform hover:scale-[1.02]">
                     <div class="flex justify-between items-start">
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded ${post.status === '●' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
                             ${post.status === '●' ? '募集中' : '終了'}
                         </span>
-                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition">削除</button>` : ''}
+                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition-colors">削除</button>` : ''}
                     </div>
                     <h3 class="text-lg font-bold text-gray-800 mt-2">${escape(post.game)}</h3>
-                    <p class="text-sm text-gray-600 mt-1">時間: ${escape(post.time)} / 投稿者: ${escape(post.userName)}</p>
+                    <p class="text-sm text-gray-600 mt-1">時間: ${escape(post.time)}</p>
+                    <p class="text-[10px] text-gray-400 mt-2">投稿者: ${escape(post.userName)}</p>
                 </div>
             `).join('');
         }
@@ -246,3 +241,4 @@
     </script>
 </body>
 </html>
+
