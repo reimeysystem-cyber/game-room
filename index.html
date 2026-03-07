@@ -7,15 +7,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
-        body {
-            font-family: 'Inter', 'sans-serif';
-            background-color: #f3f4f6;
-        }
-        .glass-morphism {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .glass-morphism { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
@@ -25,7 +18,7 @@
         <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">🔒 Secret Access</h1>
         <div class="space-y-4">
             <input type="password" id="password-input" placeholder="パスワードを入力してください" 
-                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                   class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
             <button onclick="checkPassword()" 
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200">
                 ログイン
@@ -34,14 +27,12 @@
         </div>
     </div>
 
-    <!-- メインコンテンツ (初期は非表示) -->
+    <!-- メインコンテンツ -->
     <div id="main-content" class="w-full max-w-4xl hidden space-y-6">
-        
-        <!-- ヘッダーとユーザー設定 -->
         <header class="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-2xl shadow-sm gap-4">
             <div>
                 <h1 class="text-3xl font-extrabold text-blue-600">Buddy Board</h1>
-                <p class="text-gray-500 text-sm">友達専用のゲーム募集掲示板 (Realtime)</p>
+                <p class="text-gray-500 text-sm">友達専用のゲーム募集掲示板</p>
             </div>
             <div id="user-info" class="flex items-center gap-3">
                 <span id="display-name" class="font-semibold text-gray-700 text-sm"></span>
@@ -49,111 +40,69 @@
             </div>
         </header>
 
-        <!-- 名前設定モーダル -->
         <div id="name-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
             <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
                 <h2 class="text-xl font-bold mb-4 text-gray-800">名前を設定してください</h2>
-                <input type="text" id="username-input" placeholder="あなたの名前" 
-                       class="w-full px-4 py-3 rounded-lg border border-gray-300 mb-4 focus:ring-2 focus:ring-blue-500 outline-none">
-                <button onclick="saveUserName()" 
-                        class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">決定</button>
+                <input type="text" id="username-input" placeholder="あなたの名前" class="w-full px-4 py-3 rounded-lg border border-gray-300 mb-4 outline-none">
+                <button onclick="saveUserName()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">決定</button>
             </div>
         </div>
 
-        <!-- 投稿フォーム -->
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-            <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-500"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg>
-                新しく募集する
-            </h2>
+            <h2 class="text-lg font-bold mb-4">新しく募集する</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1 text-xs">ゲーム名</label>
-                    <input type="text" id="game-name" placeholder="例: Apex, Valorant" 
-                           class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1 text-xs">時間</label>
-                    <input type="text" id="game-time" placeholder="例: 21:00〜" 
-                           class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1 text-xs">現在募集中か</label>
-                    <select id="is-active" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <option value="●">● (募集中)</option>
-                        <option value="×">× (終了)</option>
-                    </select>
-                </div>
+                <input type="text" id="game-name" placeholder="ゲーム名" class="w-full px-4 py-2 rounded-lg border border-gray-300">
+                <input type="text" id="game-time" placeholder="時間" class="w-full px-4 py-2 rounded-lg border border-gray-300">
+                <select id="is-active" class="w-full px-4 py-2 rounded-lg border border-gray-300">
+                    <option value="●">● (募集中)</option>
+                    <option value="×">× (終了)</option>
+                </select>
             </div>
-            <button onclick="addPost()" class="mt-4 w-full md:w-auto px-10 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition shadow-md shadow-blue-200">
-                投稿する
-            </button>
+            <button onclick="addPost()" class="mt-4 px-10 py-3 bg-blue-600 text-white font-bold rounded-lg transition">投稿する</button>
         </section>
 
-        <!-- 募集一覧 -->
         <section>
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-bold text-gray-800">募集一覧</h2>
-                <p id="connection-status" class="text-[10px] text-green-500 font-bold">● 接続済み</p>
-            </div>
+            <h2 class="text-xl font-bold mb-4">募集一覧</h2>
             <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- リアルタイムでここに挿入されます -->
-                <div class="col-span-full py-10 text-center text-gray-400 animate-pulse">読み込み中...</div>
+                <div class="text-center text-gray-400">読み込み中...</div>
             </div>
         </section>
     </div>
 
-    <!-- Firebase SDKs -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // 設定項目
-        const APP_PASSWORD = "2039104123"; // ← 好きなパスワードに変更してください
+        // 【重要】ここの設定を自分のFirebaseコンソールの値に書き換えてください
+        const firebaseConfig = {
+            apiKey: "あなたのAPIキー",
+            authDomain: "あなたのプロジェクト.firebaseapp.com",
+            projectId: "あなたのプロジェクトID",
+            storageBucket: "あなたのプロジェクト.appspot.com",
+            messagingSenderId: "あなたのID",
+            appId: "あなたのAPP ID"
+        };
 
-        // Firebase設定
-        const firebaseConfig = JSON.parse(__firebase_config);
+        const APP_PASSWORD = "1234"; 
+
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'game-board-v1';
 
-        // 状態
         let currentUserName = localStorage.getItem('game_username') || "";
         let currentUser = null;
 
-        // グローバル関数として公開
-        window.checkPassword = checkPassword;
-        window.saveUserName = saveUserName;
-        window.resetUserName = resetUserName;
-        window.addPost = addPost;
-        window.deletePost = deletePost;
-
-        // パスワードチェック
-        function checkPassword() {
+        window.checkPassword = () => {
             const input = document.getElementById('password-input').value;
             if (input === APP_PASSWORD) {
                 document.getElementById('auth-section').classList.add('hidden');
                 document.getElementById('main-content').classList.remove('hidden');
-                initAuth();
+                signInAnonymously(auth);
             } else {
                 document.getElementById('auth-error').classList.remove('hidden');
             }
-        }
-
-        // 認証初期化 (RULE 3)
-        async function initAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Auth Error:", error);
-            }
-        }
+        };
 
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
@@ -166,138 +115,57 @@
             }
         });
 
-        // ユーザー名保存
-        function saveUserName() {
+        window.saveUserName = () => {
             const nameInput = document.getElementById('username-input').value;
             if (!nameInput.trim()) return;
             currentUserName = nameInput;
             localStorage.setItem('game_username', nameInput);
             document.getElementById('name-modal').classList.add('hidden');
             startListening();
-        }
+        };
 
-        function resetUserName() {
-            localStorage.removeItem('game_username');
-            location.reload();
-        }
-
-        // リアルタイムリスナー (RULE 1 & 2)
         function startListening() {
-            if (!currentUser) return;
-            
-            const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
-            
-            onSnapshot(collectionRef, (snapshot) => {
+            const q = collection(db, "posts");
+            onSnapshot(q, (snapshot) => {
                 const posts = [];
-                snapshot.forEach(doc => {
-                    posts.push({ id: doc.id, ...doc.data() });
-                });
-                
-                // クライアント側でソート（RULE 2: サーバー側でorderByを使わない）
+                snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
                 posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-                
                 renderPosts(posts);
-            }, (error) => {
-                console.error("Listen Error:", error);
-                document.getElementById('connection-status').textContent = "● 切断されました";
-                document.getElementById('connection-status').className = "text-[10px] text-red-500 font-bold";
             });
         }
 
-        // 投稿追加
-        async function addPost() {
-            if (!currentUser) return;
-            
+        window.addPost = async () => {
             const game = document.getElementById('game-name').value;
             const time = document.getElementById('game-time').value;
             const status = document.getElementById('is-active').value;
+            if (!game || !time) return;
 
-            if (!game || !time) {
-                alert("全ての項目を入力してください");
-                return;
-            }
+            await addDoc(collection(db, "posts"), {
+                game, time, status, userName: currentUserName, userId: currentUser.uid, createdAt: serverTimestamp()
+            });
+            document.getElementById('game-name').value = "";
+            document.getElementById('game-time').value = "";
+        };
 
-            try {
-                const collectionRef = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
-                await addDoc(collectionRef, {
-                    game: game,
-                    time: time,
-                    status: status,
-                    userName: currentUserName,
-                    userId: currentUser.uid,
-                    createdAt: serverTimestamp()
-                });
+        window.deletePost = async (id) => {
+            if (confirm("削除しますか？")) await deleteDoc(doc(db, "posts", id));
+        };
 
-                document.getElementById('game-name').value = "";
-                document.getElementById('game-time').value = "";
-            } catch (error) {
-                console.error("Add Error:", error);
-            }
-        }
-
-        // 削除
-        async function deletePost(docId) {
-            if (!confirm("この投稿を削除しますか？")) return;
-            try {
-                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'posts', docId));
-            } catch (error) {
-                console.error("Delete Error:", error);
-            }
-        }
-
-        // UI描画
         function renderPosts(posts) {
             document.getElementById('display-name').textContent = `ようこそ、${currentUserName}さん`;
             const container = document.getElementById('posts-container');
-            container.innerHTML = "";
-
-            if (posts.length === 0) {
-                container.innerHTML = `<div class="col-span-full py-10 text-center text-gray-400 italic">現在募集はありません。</div>`;
-                return;
-            }
-
-            posts.forEach(post => {
-                const isMyPost = post.userId === currentUser.uid;
-                const card = document.createElement('div');
-                card.className = "bg-white p-5 rounded-2xl shadow-sm border-l-4 transition hover:shadow-md " + (post.status === "●" ? "border-green-500" : "border-gray-300");
-                
-                card.innerHTML = `
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded ${post.status === '●' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
-                                ${post.status === '●' ? '募集中' : '終了'}
-                            </span>
-                            <h3 class="text-lg font-bold text-gray-800 mt-1">${escapeHtml(post.game)}</h3>
-                        </div>
-                        ${isMyPost ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
-                        </button>` : ''}
+            container.innerHTML = posts.map(post => `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'}">
+                    <div class="flex justify-between">
+                        <span class="text-xs font-bold text-gray-500">${post.status === '●' ? '募集中' : '終了'}</span>
+                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500">削除</button>` : ''}
                     </div>
-                    <div class="space-y-1 text-sm text-gray-600">
-                        <p class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold text-gray-400 w-10 uppercase">Time</span> 
-                            <span class="text-gray-800">${escapeHtml(post.time)}</span>
-                        </p>
-                        <p class="flex items-center gap-2">
-                            <span class="text-[10px] font-bold text-gray-400 w-10 uppercase">Host</span> 
-                            <span class="${isMyPost ? 'text-blue-600 font-bold' : 'text-gray-800'}">${escapeHtml(post.userName)} ${isMyPost ? '(自分)' : ''}</span>
-                        </p>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
+                    <h3 class="text-lg font-bold">${post.game}</h3>
+                    <p class="text-sm text-gray-600">時間: ${post.time}</p>
+                    <p class="text-sm text-gray-600">投稿者: ${post.userName}</p>
+                </div>
+            `).join('') || '<div class="col-span-full text-center text-gray-400 italic">現在募集はありません。</div>';
         }
-
-        function escapeHtml(str) {
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
-        }
-
-        // Enterキー
-        document.getElementById('password-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') checkPassword();
-        });
     </script>
 </body>
 </html>
