@@ -10,6 +10,7 @@
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .glass-morphism { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
         .modal-active { display: flex !important; }
+        .btn-disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
@@ -25,7 +26,7 @@
                 ログイン
             </button>
             <p id="auth-error" class="text-red-500 text-sm text-center hidden">パスワードが正しくありません。</p>
-            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden">接続中...</p>
+            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden">Firebaseに接続中...</p>
         </div>
     </div>
 
@@ -77,7 +78,14 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        const firebaseConfig = JSON.parse(__firebase_config);
+        // Global Variables from environment
+        let firebaseConfig = {};
+        try {
+            firebaseConfig = JSON.parse(__firebase_config);
+        } catch (e) {
+            console.error("Firebase config parse error", e);
+        }
+
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'game-board-v1';
         const APP_PASSWORD = "1234"; 
 
@@ -89,7 +97,6 @@
         let currentUser = null;
         let unsubscribePosts = null;
 
-        // エレメントの取得
         const els = {
             authSection: document.getElementById('auth-section'),
             mainContent: document.getElementById('main-content'),
@@ -109,8 +116,12 @@
             postsContainer: document.getElementById('posts-container')
         };
 
-        // 認証処理
         async function authenticate(retryCount = 0) {
+            els.loginBtn.disabled = true;
+            els.loginBtn.classList.add('btn-disabled');
+            els.loadingMsg.classList.remove('hidden');
+            els.loadingMsg.textContent = `接続中... (試行 ${retryCount + 1}/5)`;
+
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
                     await signInWithCustomToken(auth, __initial_auth_token);
@@ -123,27 +134,26 @@
                     const delay = Math.pow(2, retryCount) * 1000;
                     setTimeout(() => authenticate(retryCount + 1), delay);
                 } else {
-                    els.loadingMsg.textContent = "接続エラー。再読み込みしてください。";
+                    els.loadingMsg.textContent = "接続エラー。設定を確認するか再読み込みしてください。";
                     els.loadingMsg.classList.replace('text-blue-500', 'text-red-500');
+                    els.loginBtn.disabled = false;
+                    els.loginBtn.classList.remove('btn-disabled');
                 }
             }
         }
 
-        // ログインボタン
         els.loginBtn.addEventListener('click', () => {
             if (els.passwordInput.value === APP_PASSWORD) {
                 els.authError.classList.add('hidden');
-                els.loadingMsg.classList.remove('hidden');
                 authenticate();
             } else {
                 els.authError.classList.remove('hidden');
             }
         });
 
-        // ユーザー状態の監視
         onAuthStateChanged(auth, (user) => {
-            currentUser = user;
             if (user) {
+                currentUser = user;
                 els.authSection.classList.add('hidden');
                 els.mainContent.classList.remove('hidden');
                 if (!currentUserName) {
@@ -154,7 +164,6 @@
             }
         });
 
-        // 名前保存
         els.saveNameBtn.addEventListener('click', () => {
             const name = els.usernameInput.value.trim();
             if (!name) return;
@@ -164,13 +173,11 @@
             startListening();
         });
 
-        // 名前リセット
         els.resetNameLink.addEventListener('click', () => {
             localStorage.removeItem('game_username');
             location.reload();
         });
 
-        // リアルタイムリスナー
         function startListening() {
             if (!currentUser) return;
             if (unsubscribePosts) unsubscribePosts();
@@ -187,7 +194,6 @@
             });
         }
 
-        // 投稿
         els.postBtn.addEventListener('click', async () => {
             if (!currentUser || !currentUserName) return;
             const game = els.gameName.value.trim();
@@ -218,7 +224,6 @@
             }
         });
 
-        // 削除機能（グローバルに公開）
         window.deletePost = async (id) => {
             if (!currentUser || !confirm("削除しますか？")) return;
             try {
@@ -231,12 +236,10 @@
 
         function renderPosts(posts) {
             els.displayName.textContent = `ようこそ、${currentUserName}さん`;
-            
             if (posts.length === 0) {
                 els.postsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 italic py-10">現在募集はありません。</div>';
                 return;
             }
-
             els.postsContainer.innerHTML = posts.map(post => `
                 <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'} transition hover:shadow-md">
                     <div class="flex justify-between items-start">
@@ -266,4 +269,3 @@
     </script>
 </body>
 </html>
-
