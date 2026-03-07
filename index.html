@@ -9,6 +9,7 @@
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         .glass-morphism { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .modal-active { display: flex !important; }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
@@ -19,7 +20,7 @@
         <div class="space-y-4">
             <input type="password" id="password-input" placeholder="パスワードを入力してください" 
                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button onclick="checkPassword()" 
+            <button id="login-btn"
                     class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200">
                 ログイン
             </button>
@@ -37,35 +38,36 @@
             </div>
             <div id="user-info" class="flex items-center gap-3">
                 <span id="display-name" class="font-semibold text-gray-700 text-sm"></span>
-                <button onclick="resetUserName()" class="text-xs text-blue-500 hover:underline">名前を変更</button>
+                <button id="reset-name-link" class="text-xs text-blue-500 hover:underline">名前を変更</button>
             </div>
         </header>
 
-        <div id="name-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <!-- 名前設定モーダル -->
+        <div id="name-modal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden">
             <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
                 <h2 class="text-xl font-bold mb-4 text-gray-800">名前を設定してください</h2>
                 <input type="text" id="username-input" placeholder="あなたの名前" class="w-full px-4 py-3 rounded-lg border border-gray-300 mb-4 outline-none">
-                <button onclick="saveUserName()" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">決定</button>
+                <button id="save-name-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">決定</button>
             </div>
         </div>
 
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 class="text-lg font-bold mb-4">新しく募集する</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" id="game-name" placeholder="ゲーム名" class="w-full px-4 py-2 rounded-lg border border-gray-300">
-                <input type="text" id="game-time" placeholder="時間" class="w-full px-4 py-2 rounded-lg border border-gray-300">
-                <select id="is-active" class="w-full px-4 py-2 rounded-lg border border-gray-300">
+                <input type="text" id="game-name" placeholder="ゲーム名" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="game-time" placeholder="時間" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                <select id="is-active" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
                     <option value="●">● (募集中)</option>
                     <option value="×">× (終了)</option>
                 </select>
             </div>
-            <button onclick="addPost()" class="mt-4 px-10 py-3 bg-blue-600 text-white font-bold rounded-lg transition">投稿する</button>
+            <button id="post-btn" class="mt-4 px-10 py-3 bg-blue-600 text-white font-bold rounded-lg transition hover:bg-blue-700 shadow-md">投稿する</button>
         </section>
 
         <section>
             <h2 class="text-xl font-bold mb-4">募集一覧</h2>
             <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="text-center text-gray-400 italic">読み込み中...</div>
+                <div class="col-span-full text-center text-gray-400 italic py-10">読み込み中...</div>
             </div>
         </section>
     </div>
@@ -75,7 +77,6 @@
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // Global Variables from environment
         const firebaseConfig = JSON.parse(__firebase_config);
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'game-board-v1';
         const APP_PASSWORD = "1234"; 
@@ -86,8 +87,29 @@
 
         let currentUserName = localStorage.getItem('game_username') || "";
         let currentUser = null;
+        let unsubscribePosts = null;
 
-        // Exponential backoff for authentication (Error Handling)
+        // エレメントの取得
+        const els = {
+            authSection: document.getElementById('auth-section'),
+            mainContent: document.getElementById('main-content'),
+            nameModal: document.getElementById('name-modal'),
+            passwordInput: document.getElementById('password-input'),
+            loginBtn: document.getElementById('login-btn'),
+            authError: document.getElementById('auth-error'),
+            loadingMsg: document.getElementById('loading-msg'),
+            usernameInput: document.getElementById('username-input'),
+            saveNameBtn: document.getElementById('save-name-btn'),
+            displayName: document.getElementById('display-name'),
+            resetNameLink: document.getElementById('reset-name-link'),
+            gameName: document.getElementById('game-name'),
+            gameTime: document.getElementById('game-time'),
+            isActive: document.getElementById('is-active'),
+            postBtn: document.getElementById('post-btn'),
+            postsContainer: document.getElementById('posts-container')
+        };
+
+        // 認証処理
         async function authenticate(retryCount = 0) {
             try {
                 if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
@@ -96,76 +118,85 @@
                     await signInAnonymously(auth);
                 }
             } catch (error) {
+                console.error("Auth Error:", error);
                 if (retryCount < 5) {
                     const delay = Math.pow(2, retryCount) * 1000;
                     setTimeout(() => authenticate(retryCount + 1), delay);
                 } else {
-                    document.getElementById('loading-msg').textContent = "接続エラー。ページを再読み込みしてください。";
-                    document.getElementById('loading-msg').classList.replace('text-blue-500', 'text-red-500');
+                    els.loadingMsg.textContent = "接続エラー。再読み込みしてください。";
+                    els.loadingMsg.classList.replace('text-blue-500', 'text-red-500');
                 }
             }
         }
 
-        window.checkPassword = () => {
-            const input = document.getElementById('password-input').value;
-            if (input === APP_PASSWORD) {
-                document.getElementById('auth-error').classList.add('hidden');
-                document.getElementById('loading-msg').classList.remove('hidden');
+        // ログインボタン
+        els.loginBtn.addEventListener('click', () => {
+            if (els.passwordInput.value === APP_PASSWORD) {
+                els.authError.classList.add('hidden');
+                els.loadingMsg.classList.remove('hidden');
                 authenticate();
             } else {
-                document.getElementById('auth-error').classList.remove('hidden');
+                els.authError.classList.remove('hidden');
             }
-        };
+        });
 
+        // ユーザー状態の監視
         onAuthStateChanged(auth, (user) => {
             currentUser = user;
             if (user) {
-                document.getElementById('auth-section').classList.add('hidden');
-                document.getElementById('main-content').classList.remove('hidden');
+                els.authSection.classList.add('hidden');
+                els.mainContent.classList.remove('hidden');
                 if (!currentUserName) {
-                    document.getElementById('name-modal').classList.remove('hidden');
+                    els.nameModal.classList.add('modal-active');
                 } else {
                     startListening();
                 }
             }
         });
 
-        window.saveUserName = () => {
-            const nameInput = document.getElementById('username-input').value;
-            if (!nameInput.trim()) return;
-            currentUserName = nameInput;
-            localStorage.setItem('game_username', nameInput);
-            document.getElementById('name-modal').classList.add('hidden');
+        // 名前保存
+        els.saveNameBtn.addEventListener('click', () => {
+            const name = els.usernameInput.value.trim();
+            if (!name) return;
+            currentUserName = name;
+            localStorage.setItem('game_username', name);
+            els.nameModal.classList.remove('modal-active');
             startListening();
-        };
+        });
 
-        window.resetUserName = () => {
+        // 名前リセット
+        els.resetNameLink.addEventListener('click', () => {
             localStorage.removeItem('game_username');
             location.reload();
-        };
+        });
 
+        // リアルタイムリスナー
         function startListening() {
             if (!currentUser) return;
-            // RULE 1: Strict Paths
+            if (unsubscribePosts) unsubscribePosts();
+
             const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
             
-            onSnapshot(collectionPath, (snapshot) => {
+            unsubscribePosts = onSnapshot(collectionPath, (snapshot) => {
                 const posts = [];
                 snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
-                // RULE 2: Client-side sorting
                 posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderPosts(posts);
             }, (error) => {
-                console.error("Firestore Listen Error:", error);
+                console.error("Firestore Error:", error);
             });
         }
 
-        window.addPost = async () => {
+        // 投稿
+        els.postBtn.addEventListener('click', async () => {
             if (!currentUser || !currentUserName) return;
-            const game = document.getElementById('game-name').value;
-            const time = document.getElementById('game-time').value;
-            const status = document.getElementById('is-active').value;
+            const game = els.gameName.value.trim();
+            const time = els.gameTime.value.trim();
+            const status = els.isActive.value;
             if (!game || !time) return;
+
+            els.postBtn.disabled = true;
+            els.postBtn.textContent = "投稿中...";
 
             try {
                 const collectionPath = collection(db, 'artifacts', appId, 'public', 'data', 'posts');
@@ -177,44 +208,47 @@
                     userId: currentUser.uid, 
                     createdAt: serverTimestamp()
                 });
-                document.getElementById('game-name').value = "";
-                document.getElementById('game-time').value = "";
+                els.gameName.value = "";
+                els.gameTime.value = "";
             } catch (e) {
-                console.error("Add Doc Error:", e);
+                console.error("Post Error:", e);
+            } finally {
+                els.postBtn.disabled = false;
+                els.postBtn.textContent = "投稿する";
             }
-        };
+        });
 
+        // 削除機能（グローバルに公開）
         window.deletePost = async (id) => {
             if (!currentUser || !confirm("削除しますか？")) return;
             try {
                 const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'posts', id);
                 await deleteDoc(docRef);
             } catch (e) {
-                console.error("Delete Doc Error:", e);
+                console.error("Delete Error:", e);
             }
         };
 
         function renderPosts(posts) {
-            document.getElementById('display-name').textContent = `ようこそ、${currentUserName}さん`;
-            const container = document.getElementById('posts-container');
+            els.displayName.textContent = `ようこそ、${currentUserName}さん`;
             
             if (posts.length === 0) {
-                container.innerHTML = '<div class="col-span-full text-center text-gray-400 italic py-10">現在募集はありません。</div>';
+                els.postsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 italic py-10">現在募集はありません。</div>';
                 return;
             }
 
-            container.innerHTML = posts.map(post => `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'}">
+            els.postsContainer.innerHTML = posts.map(post => `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'} transition hover:shadow-md">
                     <div class="flex justify-between items-start">
-                        <span class="text-xs font-bold ${post.status === '●' ? 'text-green-600' : 'text-gray-400'}">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded ${post.status === '●' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
                             ${post.status === '●' ? '募集中' : '終了'}
                         </span>
                         ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition">削除</button>` : ''}
                     </div>
-                    <h3 class="text-lg font-bold text-gray-800 mt-1">${escapeHtml(post.game)}</h3>
-                    <div class="mt-2 space-y-1 text-sm text-gray-600">
-                        <p><span class="font-semibold">時間:</span> ${escapeHtml(post.time)}</p>
-                        <p><span class="font-semibold">投稿者:</span> ${escapeHtml(post.userName)}</p>
+                    <h3 class="text-lg font-bold text-gray-800 mt-2">${escapeHtml(post.game)}</h3>
+                    <div class="mt-3 space-y-1 text-sm text-gray-600">
+                        <p class="flex items-center gap-2"><span class="text-gray-400 w-10 text-[10px] uppercase font-bold">Time</span> ${escapeHtml(post.time)}</p>
+                        <p class="flex items-center gap-2"><span class="text-gray-400 w-10 text-[10px] uppercase font-bold">Host</span> ${escapeHtml(post.userName)}</p>
                     </div>
                 </div>
             `).join('');
@@ -226,8 +260,8 @@
             return p.innerHTML;
         }
 
-        document.getElementById('password-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') checkPassword();
+        els.passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') els.loginBtn.click();
         });
     </script>
 </body>
