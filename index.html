@@ -14,22 +14,21 @@
 </head>
 <body class="min-h-screen flex flex-col items-center justify-start p-4 md:p-8">
 
-    <!-- パスワード認証セクション -->
+    <!-- ログイン画面 -->
     <div id="auth-section" class="w-full max-w-md mt-20 p-8 glass-morphism rounded-2xl shadow-xl">
         <h1 class="text-2xl font-bold text-center mb-6 text-gray-800">🔒 Secret Access</h1>
         <div class="space-y-4">
-            <input type="password" id="password-input" placeholder="パスワードを入力してください" 
+            <input type="password" id="password-input" placeholder="パスワードを入力" 
                    class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
-            <button id="login-btn"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200">
+            <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition duration-200">
                 ログイン
             </button>
-            <p id="auth-error" class="text-red-500 text-sm text-center hidden">パスワードが正しくありません。</p>
-            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden">Firebaseに接続中...</p>
+            <p id="auth-error" class="text-red-500 text-sm text-center hidden">パスワードが違います</p>
+            <p id="loading-msg" class="text-blue-500 text-sm text-center hidden">Firebaseに接続を試みています...</p>
         </div>
     </div>
 
-    <!-- メインコンテンツ -->
+    <!-- メイン画面 -->
     <div id="main-content" class="w-full max-w-4xl hidden space-y-6">
         <header class="flex flex-col md:flex-row justify-between items-center bg-white p-6 rounded-2xl shadow-sm gap-4">
             <div>
@@ -42,10 +41,10 @@
             </div>
         </header>
 
-        <!-- 名前設定モーダル -->
+        <!-- 名前設定 -->
         <div id="name-modal" class="fixed inset-0 bg-black bg-opacity-50 items-center justify-center z-50 hidden">
             <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-sm">
-                <h2 class="text-xl font-bold mb-4 text-gray-800">名前を設定してください</h2>
+                <h2 class="text-xl font-bold mb-4 text-gray-800">名前を入力してください</h2>
                 <input type="text" id="username-input" placeholder="あなたの名前" class="w-full px-4 py-3 rounded-lg border border-gray-300 mb-4 outline-none">
                 <button id="save-name-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition">決定</button>
             </div>
@@ -54,20 +53,20 @@
         <section class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
             <h2 class="text-lg font-bold mb-4">新しく募集する</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <input type="text" id="game-name" placeholder="ゲーム名" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                <input type="text" id="game-time" placeholder="時間" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
-                <select id="is-active" class="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none">
+                <input type="text" id="game-name" placeholder="ゲーム名" class="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none">
+                <input type="text" id="game-time" placeholder="時間" class="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none">
+                <select id="is-active" class="w-full px-4 py-2 rounded-lg border border-gray-300 outline-none">
                     <option value="●">● (募集中)</option>
                     <option value="×">× (終了)</option>
                 </select>
             </div>
-            <button id="post-btn" class="mt-4 px-10 py-3 bg-blue-600 text-white font-bold rounded-lg transition hover:bg-blue-700 shadow-md">投稿する</button>
+            <button id="post-btn" class="mt-4 px-10 py-3 bg-blue-600 text-white font-bold rounded-lg transition hover:bg-blue-700">投稿する</button>
         </section>
 
         <section>
             <h2 class="text-xl font-bold mb-4">募集一覧</h2>
             <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="col-span-full text-center text-gray-400 italic py-10">読み込み中...</div>
+                <div class="col-span-full text-center text-gray-400 py-10">読み込み中...</div>
             </div>
         </section>
     </div>
@@ -75,9 +74,9 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // あなたのFirebase情報を反映しました
+        // Firebase Configuration (あなたのIDをそのまま使用)
         const firebaseConfig = {
             apiKey: "AIzaSyConva0-yx5nNix7GfwmJBaGm3xKUtSDdk",
             authDomain: "game-f87b6.firebaseapp.com",
@@ -120,8 +119,8 @@
             try {
                 await signInAnonymously(auth);
             } catch (error) {
-                console.error(error);
-                els.loadingMsg.textContent = "接続エラー。Firebaseの「匿名認証」が有効か確認してください。";
+                console.error("Auth Error:", error);
+                els.loadingMsg.textContent = "接続エラー: Authentication設定を確認してください";
                 els.loginBtn.disabled = false;
             }
         }
@@ -162,53 +161,71 @@
         });
 
         function startListening() {
-            const collectionPath = collection(db, 'posts'); 
-            onSnapshot(collectionPath, (snapshot) => {
+            // 最もシンプルなパス 'posts' を使用
+            const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
+            onSnapshot(q, (snapshot) => {
                 const posts = [];
                 snapshot.forEach(doc => posts.push({ id: doc.id, ...doc.data() }));
-                posts.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
                 renderPosts(posts);
+            }, (err) => {
+                console.error("Firestore Listen Error:", err);
+                // エラーが出た場合は並び替えなしで試行
+                onSnapshot(collection(db, 'posts'), (s) => {
+                    const ps = [];
+                    s.forEach(d => ps.push({ id: d.id, ...d.data() }));
+                    renderPosts(ps);
+                });
             });
         }
 
         els.postBtn.addEventListener('click', async () => {
             const game = els.gameName.value.trim();
             const time = els.gameTime.value.trim();
-            if (!game || !time) return;
-            await addDoc(collection(db, 'posts'), {
-                game, time, status: els.isActive.value,
-                userName: currentUserName, userId: currentUser.uid, createdAt: serverTimestamp()
-            });
-            els.gameName.value = ""; els.gameTime.value = "";
+            if (!game || !time || !currentUser) return;
+            
+            els.postBtn.disabled = true;
+            try {
+                await addDoc(collection(db, 'posts'), {
+                    game, time, status: els.isActive.value,
+                    userName: currentUserName, userId: currentUser.uid, createdAt: serverTimestamp()
+                });
+                els.gameName.value = ""; els.gameTime.value = "";
+            } catch (e) {
+                console.error("Post Error:", e);
+                alert("投稿に失敗しました。ルールの設定を確認してください。");
+            } finally {
+                els.postBtn.disabled = false;
+            }
         });
 
         window.deletePost = async (id) => {
-            if (confirm("削除しますか？")) await deleteDoc(doc(db, 'posts', id));
+            if (confirm("削除しますか？")) {
+                try {
+                    await deleteDoc(doc(db, 'posts', id));
+                } catch (e) { console.error("Delete Error:", e); }
+            }
         };
 
         function renderPosts(posts) {
             els.displayName.textContent = `ようこそ、${currentUserName}さん`;
+            if (posts.length === 0) {
+                els.postsContainer.innerHTML = '<div class="col-span-full text-center text-gray-400 py-10">募集はありません</div>';
+                return;
+            }
             els.postsContainer.innerHTML = posts.map(post => `
-                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'} transition hover:shadow-md">
+                <div class="bg-white p-5 rounded-2xl shadow-sm border-l-4 ${post.status === '●' ? 'border-green-500' : 'border-gray-300'}">
                     <div class="flex justify-between items-start">
                         <span class="text-[10px] font-bold px-2 py-0.5 rounded ${post.status === '●' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
                             ${post.status === '●' ? '募集中' : '終了'}
                         </span>
-                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500 transition">削除</button>` : ''}
+                        ${post.userId === currentUser.uid ? `<button onclick="deletePost('${post.id}')" class="text-gray-300 hover:text-red-500">削除</button>` : ''}
                     </div>
-                    <h3 class="text-lg font-bold text-gray-800 mt-2">${post.game}</h3>
-                    <div class="mt-3 space-y-1 text-sm text-gray-600">
-                        <p class="flex items-center gap-2"><span class="text-gray-400 w-10 text-[10px] uppercase font-bold">Time</span> ${post.time}</p>
-                        <p class="flex items-center gap-2"><span class="text-gray-400 w-10 text-[10px] uppercase font-bold">Host</span> ${post.userName}</p>
-                    </div>
+                    <h3 class="text-lg font-bold text-gray-800 mt-2">${escape(post.game)}</h3>
+                    <p class="text-sm text-gray-600 mt-1">時間: ${escape(post.time)} / 投稿者: ${escape(post.userName)}</p>
                 </div>
-            `).join('') || '<div class="col-span-full text-center text-gray-400 italic py-10">募集はありません</div>';
+            `).join('');
         }
-
-        els.passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') els.loginBtn.click();
-        });
+        function escape(s) { return s ? s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])) : ''; }
     </script>
 </body>
 </html>
-
