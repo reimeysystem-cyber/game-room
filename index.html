@@ -3,237 +3,148 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Buddy Board - Game Room</title>
+    <title>GAME ROOM - Final</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
-        .neon-border { box-shadow: 0 0 15px rgba(37, 99, 235, 0.1); }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;900&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; }
     </style>
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen flex items-center justify-center p-4">
 
-    <!-- 1. ログイン画面 -->
-    <div id="auth-section" class="fixed inset-0 flex items-center justify-center p-4 z-50 bg-slate-900">
-        <div class="w-full max-w-md p-10 bg-white rounded-[2.5rem] shadow-2xl text-center">
-            <div class="mb-10">
-                <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto flex items-center justify-center mb-6 shadow-xl shadow-blue-200">
-                    <span class="text-4xl text-white">🎮</span>
-                </div>
-                <h1 class="text-4xl font-black text-slate-800 tracking-tighter italic">GAME ROOM</h1>
-                <p class="text-slate-400 mt-3 font-bold uppercase tracking-widest text-xs">Buddy Connection</p>
-            </div>
-            
-            <div class="space-y-4">
-                <input type="password" id="password-input" placeholder="PASS: 1234" 
-                       class="w-full px-6 py-5 bg-slate-50 border-2 border-transparent focus:border-blue-500 focus:bg-white rounded-2xl outline-none text-center text-2xl transition-all font-mono">
-                
-                <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98]">
-                    ENTER ROOM
-                </button>
-            </div>
-
-            <div id="error-container" class="mt-8 hidden">
-                <div class="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-left">
-                    <p id="error-msg" class="text-rose-600 font-black text-xs mb-1"></p>
-                    <p class="text-[10px] text-rose-400 leading-tight">
-                        ※反映には数分かかる場合があります。解決しない場合はプロジェクト設定を確認してください。
-                    </p>
-                </div>
-            </div>
-        </div>
+    <!-- ログイン画面 -->
+    <div id="auth-box" class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center">
+        <h1 class="text-4xl font-black mb-2 text-slate-800 italic tracking-tighter">GAME ROOM</h1>
+        <p class="text-[10px] font-bold text-slate-400 tracking-[0.2em] mb-8 uppercase">Buddy Connection</p>
+        
+        <input type="password" id="pass" placeholder="PASS: 1234" 
+               class="w-full p-5 bg-slate-50 border-2 border-transparent focus:border-blue-500 rounded-2xl mb-4 text-center text-2xl font-mono outline-none transition-all">
+        
+        <button id="login-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-5 rounded-2xl shadow-lg shadow-blue-200 transition-all active:scale-[0.98]">
+            ENTER ROOM
+        </button>
+        <p id="err" class="mt-6 text-xs text-rose-500 font-bold hidden"></p>
     </div>
 
-    <!-- 2. メイン画面 -->
-    <div id="main-content" class="hidden max-w-5xl mx-auto p-4 md:p-10 space-y-10">
-        <header class="flex justify-between items-end">
+    <!-- メイン画面 -->
+    <div id="main-box" class="hidden w-full max-w-2xl bg-white p-8 rounded-[3rem] shadow-2xl text-slate-900">
+        <div class="flex justify-between items-end mb-10">
             <div>
-                <h1 class="text-3xl font-black text-slate-900 tracking-tighter">GAME ROOM</h1>
-                <p id="display-name" class="text-blue-600 font-bold text-sm uppercase tracking-widest"></p>
+                <h2 class="text-2xl font-black italic tracking-tighter text-blue-600">GAME ROOM</h2>
+                <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Recruits</p>
             </div>
-            <button id="reset-name" class="text-[10px] font-black text-slate-300 hover:text-rose-500 uppercase tracking-widest border-b border-slate-200 pb-1 transition-colors">Logout</button>
-        </header>
-
-        <!-- フォーム -->
-        <section class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-100 neon-border">
-            <div class="flex flex-col md:flex-row gap-4">
-                <div class="flex-grow space-y-4">
-                    <input type="text" id="game-name" placeholder="GAME TITLE" class="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                    <input type="text" id="game-time" placeholder="TIME / SCHEDULE" class="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-blue-500 font-bold">
-                </div>
-                <button id="post-btn" class="md:w-40 bg-slate-900 hover:bg-black text-white font-black rounded-2xl shadow-xl transition-all active:scale-95 py-6 md:py-0">
-                    RECRUIT
-                </button>
-            </div>
-        </section>
-
-        <!-- 投稿リスト -->
-        <div id="posts-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div class="col-span-full py-20 text-center text-slate-300 font-black italic tracking-widest">LOADING...</div>
+            <button onclick="location.reload()" class="text-[10px] font-black text-slate-300 hover:text-rose-500 transition-colors uppercase border-b pb-1">Logout</button>
         </div>
-    </div>
 
-    <!-- 名前入力 -->
-    <div id="name-modal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md flex items-center justify-center z-[100] hidden p-6">
-        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center">
-            <h2 class="text-2xl font-black mb-2 text-slate-800">YOUR NAME</h2>
-            <p class="text-slate-400 text-xs font-bold mb-8 uppercase tracking-widest">掲示板での名前</p>
-            <input type="text" id="username-input" placeholder="NAME" maxlength="10" class="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl mb-8 text-center text-xl outline-none focus:border-blue-500 font-bold transition-all">
-            <button id="save-name-btn" class="w-full bg-blue-600 text-white py-5 rounded-2xl font-black shadow-lg shadow-blue-100 active:scale-95 transition-all">
-                START SESSION
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-10 p-6 bg-slate-50 rounded-[2rem]">
+            <input type="text" id="g-name" placeholder="GAME TITLE" class="w-full p-4 bg-white rounded-xl outline-none border-2 border-transparent focus:border-blue-500 font-bold">
+            <input type="text" id="g-time" placeholder="TIME / SCHEDULE" class="w-full p-4 bg-white rounded-xl outline-none border-2 border-transparent focus:border-blue-500 font-bold">
+            <button id="post-btn" class="md:col-span-2 bg-slate-900 hover:bg-black text-white font-black py-4 rounded-xl shadow-xl transition-all active:scale-95">
+                RECRUIT NOW
             </button>
+        </div>
+
+        <div id="list" class="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+            <!-- 投稿がここに表示されます -->
         </div>
     </div>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, serverTimestamp, query, orderBy } from "https://www.gstatic.com/firebasejs/11.4.0/firebase-firestore.js";
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // image_c6b067.png のプロジェクトID 「game-room-4f746」に修正
+        // 送っていただいた最新の情報を反映
         const firebaseConfig = {
-            apiKey: "AIzaSyConva0-yx5nNix7GfwmJBaGm3xKUtSDdk",
+            apiKey: "AIzaSyAX900lgyFQ1FgXeQQFqf-wrnuoanUyqjI",
             authDomain: "game-room-4f746.firebaseapp.com",
             projectId: "game-room-4f746",
             storageBucket: "game-room-4f746.firebasestorage.app",
-            messagingSenderId: "436007220199",
-            appId: "1:436007220199:web:9c0a35272af2e96d028342"
+            messagingSenderId: "584699897796",
+            appId: "1:584699897796:web:7fc3f2cd46883e90ab2691"
         };
 
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const els = {
-            authSec: document.getElementById('auth-section'),
-            mainSec: document.getElementById('main-content'),
-            nameMod: document.getElementById('name-modal'),
-            errCont: document.getElementById('error-container'),
-            errText: document.getElementById('error-msg'),
-            passIn: document.getElementById('password-input'),
-            loginBtn: document.getElementById('login-btn')
-        };
+        const errEl = document.getElementById('err');
 
-        els.loginBtn.addEventListener('click', async () => {
-            if (els.passIn.value !== "1234") {
-                showError("INVALID PASSWORD");
-                return;
+        // ログイン処理
+        document.getElementById('login-btn').onclick = async () => {
+            if(document.getElementById('pass').value !== "1234") {
+                showErr("INVALID PASSWORD"); return;
             }
-            
-            els.errText.textContent = "CONNECTING...";
-            els.errCont.classList.remove('hidden');
-            els.loginBtn.disabled = true;
-            
             try {
-                await setPersistence(auth, browserLocalPersistence);
                 await signInAnonymously(auth);
-            } catch (e) {
-                console.error(e);
-                els.loginBtn.disabled = false;
-                showError("ERROR: " + e.code);
+            } catch(e) {
+                showErr("AUTH ERROR: " + e.code);
             }
-        });
-
-        function showError(msg) {
-            els.errText.textContent = msg;
-            els.errCont.classList.remove('hidden');
-        }
-
-        onAuthStateChanged(auth, (user) => {
-            if (user) {
-                els.authSec.classList.add('hidden');
-                els.mainSec.classList.remove('hidden');
-                const name = localStorage.getItem('game_room_user');
-                if (!name) {
-                    els.nameMod.classList.remove('hidden');
-                } else {
-                    initBoard(name, user.uid);
-                }
-            } else {
-                els.authSec.classList.remove('hidden');
-                els.mainSec.classList.add('hidden');
-            }
-        });
-
-        document.getElementById('save-name-btn').addEventListener('click', () => {
-            const name = document.getElementById('username-input').value.trim();
-            if (name) {
-                localStorage.setItem('game_room_user', name);
-                els.nameMod.classList.add('hidden');
-                initBoard(name, auth.currentUser.uid);
-            }
-        });
-
-        document.getElementById('reset-name').addEventListener('click', async () => {
-            if(confirm("Logout?")) {
-                localStorage.removeItem('game_room_user');
-                await signOut(auth);
-                location.reload();
-            }
-        });
-
-        function initBoard(userName, userId) {
-            document.getElementById('display-name').textContent = "User: " + userName;
-            const q = query(collection(db, 'posts'), orderBy('createdAt', 'desc'));
-            onSnapshot(q, (snapshot) => renderPosts(snapshot, userId), (err) => {
-                onSnapshot(collection(db, 'posts'), (s) => renderPosts(s, userId));
-            });
-        }
-
-        function renderPosts(snapshot, userId) {
-            const container = document.getElementById('posts-container');
-            container.innerHTML = "";
-            if (snapshot.empty) {
-                container.innerHTML = `<div class="col-span-full py-32 text-center text-slate-300 font-bold border-4 border-dashed border-slate-200 rounded-[3rem]">NO RECRUITS</div>`;
-                return;
-            }
-            const items = [];
-            snapshot.forEach(d => items.push({id: d.id, ...d.data()}));
-            items.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-
-            items.forEach(post => {
-                const card = document.createElement('div');
-                card.className = "bg-white p-8 rounded-[2rem] border border-slate-100 shadow-sm post-card flex flex-col justify-between";
-                card.innerHTML = `
-                    <div>
-                        <div class="flex justify-between items-start mb-6">
-                            <div class="h-2 w-12 bg-blue-500 rounded-full"></div>
-                            ${post.userId === userId ? `<button onclick="window.del('${post.id}')" class="text-slate-200 hover:text-rose-500 transition-colors">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg>
-                            </button>` : ''}
-                        </div>
-                        <h3 class="text-2xl font-black text-slate-800 mb-3 uppercase tracking-tight">${escape(post.game)}</h3>
-                        <p class="text-blue-600 font-black italic">@ ${escape(post.time)}</p>
-                    </div>
-                    <div class="mt-8 pt-6 border-t border-slate-50 flex items-center justify-between">
-                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">${escape(post.userName)}</span>
-                        <div class="w-2 h-2 rounded-full bg-green-400 shadow-lg shadow-green-100"></div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        }
-
-        document.getElementById('post-btn').addEventListener('click', async () => {
-            const g = document.getElementById('game-name');
-            const t = document.getElementById('game-time');
-            if (!g.value.trim() || !t.value.trim() || !auth.currentUser) return;
-            try {
-                await addDoc(collection(db, 'posts'), {
-                    game: g.value.trim(), time: t.value.trim(),
-                    userName: localStorage.getItem('game_room_user'),
-                    userId: auth.currentUser.uid, createdAt: serverTimestamp()
-                });
-                g.value = ""; t.value = "";
-            } catch (e) { alert("送信エラー。Firestoreの権限を確認してください。"); }
-        });
-
-        window.del = async (id) => { 
-            if(confirm("DELETE?")) await deleteDoc(doc(db, 'posts', id));
         };
 
-        function escape(s) { return s ? s.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[m])) : ''; }
+        function showErr(msg) {
+            errEl.textContent = msg;
+            errEl.classList.remove('hidden');
+        }
+
+        // 状態監視
+        onAuthStateChanged(auth, (user) => {
+            if(user) {
+                document.getElementById('auth-box').classList.add('hidden');
+                document.getElementById('main-box').classList.remove('hidden');
+                initBoard(user.uid);
+            }
+        });
+
+        // 掲示板初期化
+        function initBoard(myUid) {
+            const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
+            onSnapshot(q, (snapshot) => {
+                const list = document.getElementById('list');
+                list.innerHTML = "";
+                if(snapshot.empty) {
+                    list.innerHTML = `<div class="text-center py-10 text-slate-300 font-bold italic">NO RECRUITS YET</div>`;
+                }
+                snapshot.forEach(d => {
+                    const data = d.data();
+                    const item = document.createElement('div');
+                    item.className = "p-6 bg-slate-50 rounded-[1.5rem] border border-slate-100 flex justify-between items-center";
+                    item.innerHTML = `
+                        <div>
+                            <h3 class="font-black text-xl text-slate-800 uppercase">${data.game}</h3>
+                            <p class="text-sm font-bold text-blue-600 italic">@ ${data.time}</p>
+                        </div>
+                        ${data.userId === myUid ? `<button onclick="window.delPost('${d.id}')" class="text-slate-300 hover:text-rose-500 transition-colors uppercase text-[10px] font-bold">Delete</button>` : ''}
+                    `;
+                    list.appendChild(item);
+                });
+            });
+        }
+
+        // 投稿
+        document.getElementById('post-btn').onclick = async () => {
+            const game = document.getElementById('g-name').value.trim();
+            const time = document.getElementById('g-time').value.trim();
+            if(!game || !time) return;
+            
+            try {
+                await addDoc(collection(db, "posts"), {
+                    game, time,
+                    userId: auth.currentUser.uid,
+                    createdAt: serverTimestamp()
+                });
+                document.getElementById('g-name').value = "";
+                document.getElementById('g-time').value = "";
+            } catch(e) {
+                alert("送信エラー: Firestoreのルールを確認してください");
+            }
+        };
+
+        window.delPost = async (id) => {
+            if(confirm("DELETE THIS RECRUIT?")) {
+                await deleteDoc(doc(db, "posts", id));
+            }
+        };
     </script>
 </body>
 </html>
-
